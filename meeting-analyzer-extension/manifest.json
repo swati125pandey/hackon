@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Meeting Analyzer",
+  "version": "1.0.0",
+  "description": "Analyze meeting transcripts to extract insights, action items, and summaries",
+  "permissions": [],
+  "host_permissions": [
+    "http://localhost:8001/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
+

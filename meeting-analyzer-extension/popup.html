@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Analyzer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1>Meeting Analyzer</h1>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="input">Analyze</button>
+      <button class="tab" data-tab="results">Results</button>
+    </div>
+
+    <div id="input-tab" class="tab-content active">
+      <!-- Input Mode Toggle -->
+      <div class="input-mode-toggle">
+        <button class="mode-btn active" data-mode="transcript">Transcript</button>
+        <button class="mode-btn" data-mode="json">JSON Body</button>
+      </div>
+
+      <!-- Transcript Mode -->
+      <div id="transcript-mode" class="input-mode active">
+        <div class="form-group">
+          <label for="transcript">Meeting Transcript</label>
+          <textarea 
+            id="transcript" 
+            placeholder="Paste your meeting transcript here..."
+            rows="8"
+          ></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="duration">Duration (mins)</label>
+            <input type="number" id="duration" value="30" min="1" max="480">
+          </div>
+          <div class="form-group half">
+            <label for="attendees">Attendees</label>
+            <input type="number" id="attendees" value="4" min="1" max="100">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="model">AI Model</label>
+          <select id="model">
+            <option value="gpt-4o">GPT-4o</option>
+            <option value="gpt-4">GPT-4</option>
+            <option value="gpt-5">GPT-5</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- JSON Mode -->
+      <div id="json-mode" class="input-mode">
+        <div class="form-group">
+          <label for="json-body">Request Body (JSON)</label>
+          <textarea 
+            id="json-body" 
+            placeholder='Paste your JSON request body here...
+
+Example:
+{
+  "transcript": "Meeting transcript...",
+  "model": "gpt-4o",
+  "meeting_duration_minutes": 30,
+  "expected_attendees": 4
+}'
+            rows="12"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="endpoint">API Endpoint</label>
+        <input type="text" id="endpoint" value="http://localhost:8001/analyze">
+      </div>
+
+      <button id="analyze-btn" class="primary-btn">
+        <span class="btn-text">Analyze Meeting</span>
+        <span class="btn-loader hidden">
+          <svg class="spinner" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="30 70"/>
+          </svg>
+        </span>
+      </button>
+
+      <div id="error-message" class="error hidden"></div>
+    </div>
+
+    <div id="results-tab" class="tab-content">
+      <div id="no-results" class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <p>No analysis yet</p>
+        <span>Submit a transcript to see results</span>
+      </div>
+      <div id="results-content" class="hidden"></div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
+
