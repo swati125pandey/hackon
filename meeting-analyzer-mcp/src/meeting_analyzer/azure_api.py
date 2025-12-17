@@ -1,8 +1,8 @@
-"""REST API for Meeting Transcript Analyzer.
+"""REST API for Meeting Transcript Analyzer using Azure OpenAI.
 
-Run with: uvicorn meeting_analyzer.api:app --reload
+Run with: uvicorn meeting_analyzer.azure_api:app --reload --port 8001
 
-Requires GOOGLE_CLOUD_API_KEY environment variable to be set (or in .env file).
+Requires AZURE_OPENAI_API_KEY environment variable to be set (or in .env file).
 """
 
 import os
@@ -11,9 +11,8 @@ import re
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Optional
-from google import genai
-from google.genai import types
+from typing import Optional, Literal
+from openai import AzureOpenAI
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -21,10 +20,27 @@ env_path = Path(__file__).parent.parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
 app = FastAPI(
-    title="Meeting Analyzer API",
-    description="Analyze meeting transcripts to extract action items, open points, and assess fruitfulness",
+    title="Meeting Analyzer API (Azure OpenAI)",
+    description="Analyze meeting transcripts using Azure OpenAI GPT models",
     version="0.1.0"
 )
+
+
+# Azure OpenAI Configuration
+AZURE_CONFIGS = {
+    "gpt-4.1": {
+        "endpoint": "https://fy26-hackon-q3.openai.azure.com/",
+        "deployment": "fy26-hackon-q3-gpt-4.1",
+        "api_version": "2025-01-01-preview",
+        "api_key_env": "AZURE_OPENAI_API_KEY_GPT41",
+    },
+    "gpt-5": {
+        "endpoint": "https://siddh-m9gwv1hd-eastus2.cognitiveservices.azure.com/",
+        "deployment": "hackon-fy26q3-gpt5",
+        "api_version": "2025-01-01-preview",
+        "api_key_env": "AZURE_OPENAI_API_KEY_GPT5",
+    },
+}
 
 
 # Request/Response models
@@ -32,6 +48,7 @@ class TranscriptRequest(BaseModel):
     transcript: str
     meeting_duration_minutes: Optional[int] = None
     expected_attendees: Optional[int] = None
+    model: Literal["gpt-4.1", "gpt-5"] = "gpt-4.1"
 
 
 class ActionItem(BaseModel):
@@ -63,6 +80,7 @@ class MeetingAnalysis(BaseModel):
     open_points: list[OpenPoint]
     follow_up_assessment: FollowUpAssessment
     fruitfulness: MeetingFruitfulness
+    model_used: str
 
 
 class AnalysisPrompt(BaseModel):
@@ -119,63 +137,52 @@ TRANSCRIPT:
 Respond with ONLY the JSON object, no other text."""
 
 
-LEGACY_ANALYSIS_PROMPT = """Analyze this meeting transcript and extract the following information:
-
-## 1. ACTION ITEMS
-For each action item found in the transcript:
-- Task: What needs to be done
-- Owner: Who is responsible (if mentioned, otherwise mark as "Unassigned")
-- Deadline: When it's due (if mentioned, otherwise mark as "Not specified")
-
-## 2. OPEN POINTS
-Topics that were discussed but NOT resolved:
-- Topic: The unresolved issue or question
-- Context: Why it remains open
-- Blocking: Is this blocking other work? (Yes/No)
-
-## 3. FOLLOW-UP ASSESSMENT
-- Follow-up needed: Yes or No
-- Reason: Why a follow-up is or isn't needed
-- Suggested topics: If follow-up is needed, what should be discussed
-
-## 4. MEETING FRUITFULNESS
-- Score: 0-100 (based on decisions made, action items created, and issues resolved)
-- Verdict: Fruitful / Partially Productive / Not Fruitful
-- Explanation: Brief summary of why this score was given
-
-TRANSCRIPT:
----
-{transcript}
----
-
-Provide your analysis in a clear, structured format using the sections above."""
-
-
-def get_gemini_client():
-    """Initialize Gemini client with Vertex AI."""
-    api_key = os.environ.get("GOOGLE_CLOUD_API_KEY")
+def get_azure_client(model: str = "gpt-4.1") -> tuple[AzureOpenAI, str]:
+    """Initialize Azure OpenAI client.
+    
+    Args:
+        model: Model to use ("gpt-4.1" or "gpt-5")
+    
+    Returns:
+        Tuple of (client, deployment_name)
+    """
+    if model not in AZURE_CONFIGS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid model. Choose from: {list(AZURE_CONFIGS.keys())}"
+        )
+    
+    config = AZURE_CONFIGS[model]
+    api_key_env = config["api_key_env"]
+    api_key = os.environ.get(api_key_env)
+    
     if not api_key:
         raise HTTPException(
             status_code=500,
-            detail="GOOGLE_CLOUD_API_KEY environment variable not set"
+            detail=f"{api_key_env} environment variable not set for model {model}"
         )
     
-    return genai.Client(
-        vertexai=True,
+    client = AzureOpenAI(
         api_key=api_key,
+        api_version=config["api_version"],
+        azure_endpoint=config["endpoint"],
     )
+    
+    return client, config["deployment"]
 
 
 @app.get("/")
 async def root():
     """Health check endpoint."""
     return {
-        "service": "Meeting Analyzer API",
+        "service": "Meeting Analyzer API (Azure OpenAI)",
         "status": "running",
+        "available_models": list(AZURE_CONFIGS.keys()),
         "endpoints": {
             "POST /analyze": "Analyze a transcript and get structured JSON response",
             "POST /analyze/prompt": "Get the analysis prompt for a transcript (legacy)",
-            "GET /health": "Health check"
+            "GET /health": "Health check",
+            "GET /models": "List available models"
         }
     }
 
@@ -183,10 +190,32 @@ async def root():
 @app.get("/health")
 async def health():
     """Health check."""
-    api_key_configured = bool(os.environ.get("GOOGLE_CLOUD_API_KEY"))
+    api_key_configured = bool(os.environ.get("AZURE_OPENAI_API_KEY"))
     return {
         "status": "healthy",
-        "gemini_api_configured": api_key_configured
+        "azure_openai_api_configured": api_key_configured,
+        "available_models": list(AZURE_CONFIGS.keys())
+    }
+
+
+@app.get("/models")
+async def list_models():
+    """List available Azure OpenAI models."""
+    return {
+        "models": [
+            {
+                "id": "gpt-4.1",
+                "name": "GPT-4.1",
+                "deployment": AZURE_CONFIGS["gpt-4.1"]["deployment"],
+                "endpoint": AZURE_CONFIGS["gpt-4.1"]["endpoint"],
+            },
+            {
+                "id": "gpt-5",
+                "name": "GPT-5",
+                "deployment": AZURE_CONFIGS["gpt-5"]["deployment"],
+                "endpoint": AZURE_CONFIGS["gpt-5"]["endpoint"],
+            }
+        ]
     }
 
 
@@ -195,11 +224,14 @@ async def analyze_transcript(request: TranscriptRequest):
     """
     Analyze a meeting transcript and return structured insights.
     
-    This endpoint uses Gemini to analyze the transcript and returns:
+    This endpoint uses Azure OpenAI to analyze the transcript and returns:
     - Action items with owners and deadlines
     - Open/unresolved points
     - Follow-up assessment
     - Fruitfulness score and verdict
+    
+    Args:
+        request: TranscriptRequest with transcript and optional model selection
     """
     if not request.transcript.strip():
         raise HTTPException(status_code=400, detail="Transcript cannot be empty")
@@ -219,33 +251,29 @@ async def analyze_transcript(request: TranscriptRequest):
         prompt = f"Context:\n{context}\n\n{prompt}"
     
     try:
-        # Initialize Gemini client
-        client = get_gemini_client()
+        # Initialize Azure OpenAI client
+        client, deployment = get_azure_client(request.model)
         
-        # Build content for Gemini
-        contents = [
-            types.Content(
-                role="user",
-                parts=[types.Part(text=prompt)]
-            )
-        ]
-        
-        # Configure generation settings
-        generate_content_config = types.GenerateContentConfig(
+        # Call Azure OpenAI API
+        response = client.chat.completions.create(
+            model=deployment,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert meeting analyst. Analyze meeting transcripts and extract actionable insights in JSON format."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            max_tokens=4096,
             temperature=0.7,
             top_p=0.95,
-            max_output_tokens=4096,
-        )
-        
-        # Call Gemini API
-        response = client.models.generate_content(
-            model="gemini-2.5-pro",
-            contents=contents,
-            config=generate_content_config,
         )
         
         # Extract response text
-        response_text = response.text
+        response_text = response.choices[0].message.content
         
         # Parse JSON response
         try:
@@ -258,7 +286,7 @@ async def analyze_transcript(request: TranscriptRequest):
             else:
                 raise HTTPException(
                     status_code=500,
-                    detail="Failed to parse LLM response as JSON"
+                    detail=f"Failed to parse LLM response as JSON. Response: {response_text[:500]}"
                 )
         
         # Build response model
@@ -282,7 +310,8 @@ async def analyze_transcript(request: TranscriptRequest):
                     "verdict": "Unable to analyze",
                     "explanation": "Analysis failed"
                 })
-            )
+            ),
+            model_used=request.model
         )
         
     except Exception as e:
@@ -296,14 +325,13 @@ async def get_analysis_prompt(request: TranscriptRequest):
     """
     Generate an analysis prompt for a meeting transcript (legacy endpoint).
     
-    Returns a prompt that can be sent to an LLM (Claude, GPT-4, Gemini, etc.)
-    to analyze the meeting and extract insights.
+    Returns a prompt that can be sent to an LLM to analyze the meeting.
     """
     if not request.transcript.strip():
         raise HTTPException(status_code=400, detail="Transcript cannot be empty")
     
     # Build the full prompt
-    prompt = LEGACY_ANALYSIS_PROMPT.format(transcript=request.transcript)
+    prompt = ANALYSIS_PROMPT.format(transcript=request.transcript)
     
     # Add context if provided
     context_parts = []
@@ -318,11 +346,12 @@ async def get_analysis_prompt(request: TranscriptRequest):
     
     return AnalysisPrompt(
         prompt=prompt,
-        instructions="Send this prompt to an LLM (Claude, GPT-4, Gemini) to get the analysis"
+        instructions=f"Send this prompt to Azure OpenAI ({request.model}) to get the analysis"
     )
 
 
 # Entry point for running directly
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)
+

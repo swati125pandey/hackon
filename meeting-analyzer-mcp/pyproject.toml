@@ -8,6 +8,8 @@ dependencies = [
     "fastapi>=0.100.0",
     "uvicorn>=0.20.0",
     "google-genai>=1.0.0",
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
     "pydantic>=2.0.0",
 ]
 
@@ -21,3 +23,4 @@ packages = ["src/meeting_analyzer"]
 [project.scripts]
 meeting-analyzer = "meeting_analyzer.server:run"
 meeting-analyzer-api = "meeting_analyzer.api:app"
+meeting-analyzer-azure = "meeting_analyzer.azure_api:app"
