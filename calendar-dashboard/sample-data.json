@@ -1,0 +1,39 @@
+[
+  {
+    "employeeId": "EMP001",
+    "date": "2024-01-15",
+    "duration": 30,
+    "hasActionItems": true
+  },
+  {
+    "employeeId": "EMP001",
+    "date": "2024-01-16",
+    "duration": 45,
+    "hasActionItems": false
+  },
+  {
+    "employeeId": "EMP002",
+    "date": "2024-01-15",
+    "duration": 60,
+    "hasActionItems": true
+  },
+  {
+    "employeeId": "EMP002",
+    "date": "2024-01-17",
+    "duration": 30,
+    "hasActionItems": true
+  },
+  {
+    "employeeId": "EMP003",
+    "date": "2024-01-16",
+    "duration": 90,
+    "hasActionItems": false
+  },
+  {
+    "employeeId": "EMP003",
+    "date": "2024-01-18",
+    "duration": 20,
+    "hasActionItems": true
+  }
+]
+

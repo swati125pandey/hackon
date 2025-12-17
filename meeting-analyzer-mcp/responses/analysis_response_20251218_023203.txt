@@ -1,0 +1,52 @@
+{
+    "action_items": [
+        {
+            "task": "Share resort venue details near Bangalore that fits headcount and budget",
+            "owner": "Pooja",
+            "deadline": "Tomorrow"
+        },
+        {
+            "task": "Get final headcount from HR",
+            "owner": "Rohit",
+            "deadline": "Next Monday"
+        },
+        {
+            "task": "Check with AV team about equipment requirements for entertainment",
+            "owner": "Mehul",
+            "deadline": "Today"
+        },
+        {
+            "task": "Create a list of activity ideas for the party",
+            "owner": "Pooja",
+            "deadline": "Not specified"
+        }
+    ],
+    "open_points": [
+        {
+            "topic": "Venue confirmation",
+            "context": "Venue options discussed but final selection pending review of Pooja\u2019s shared details",
+            "blocking": true
+        },
+        {
+            "topic": "Entertainment lineup",
+            "context": "Ideas proposed but final decision on performers and activities pending",
+            "blocking": false
+        }
+    ],
+    "follow_up_assessment": {
+        "follow_up_needed": true,
+        "reason": "Several key details like venue and entertainment lineup remain unresolved and require confirmation in the next sync meeting",
+        "suggested_topics": [
+            "Venue finalization",
+            "Entertainment and activity planning",
+            "Budget confirmation"
+        ]
+    },
+    "fruitfulness": {
+        "score": 78,
+        "verdict": "Partially Productive",
+        "explanation": "The meeting established a theme, tentative date, and clear action items but left venue and entertainment details open for follow-up."
+    },
+    "model_used": "gpt-5",
+    "timeDifference": 20
+}

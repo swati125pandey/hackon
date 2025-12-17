@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📅 Calendar Dashboard</h1>
+            <div class="week-selector">
+                <label for="week-select">Select Week:</label>
+                <input type="week" id="week-select" value="">
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Total Meetings Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Total Meetings</h2>
+                </div>
+                <div class="card-body">
+                    <div class="metric-value" id="total-meetings">0</div>
+                    <div class="metric-label">meetings this week</div>
+                </div>
+            </div>
+
+            <!-- Total Minutes Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Total Meeting Time</h2>
+                </div>
+                <div class="card-body">
+                    <div class="metric-value" id="total-minutes">0</div>
+                    <div class="metric-label">minutes this week</div>
+                </div>
+            </div>
+
+            <!-- Meetings with Action Items Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Meetings with Action Items</h2>
+                </div>
+                <div class="card-body">
+                    <div class="metric-value" id="meetings-with-actions">0</div>
+                    <div class="metric-label">meetings have action items</div>
+                </div>
+            </div>
+
+            <!-- Efficiency Percentage Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Weekly Efficiency</h2>
+                </div>
+                <div class="card-body">
+                    <div class="metric-value" id="efficiency-percentage">0%</div>
+                    <div class="metric-label">efficiency score</div>
+                </div>
+            </div>
+
+            <!-- Overshot Minutes Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Overshot Minutes</h2>
+                </div>
+                <div class="card-body">
+                    <div class="metric-value" id="overshot-minutes">0</div>
+                    <div class="metric-label">minutes overshot</div>
+                </div>
+            </div>
+
+            <!-- Undershot Minutes Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Undershot Minutes</h2>
+                </div>
+                <div class="card-body">
+                    <div class="metric-value" id="undershot-minutes">0</div>
+                    <div class="metric-label">minutes undershot</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Breakdown Section -->
+        <div class="card full-width">
+            <div class="card-header">
+                <h2>Employee Breakdown</h2>
+            </div>
+            <div class="card-body">
+                <div class="table-container">
+                    <table id="employee-table">
+                        <thead>
+                            <tr>
+                                <th>Employee ID</th>
+                                <th>Number of Meetings</th>
+                                <th>Total Minutes</th>
+                                <th>Meetings with Action Items</th>
+                                <th>Efficiency %</th>
+                                <th>Overshot Minutes</th>
+                                <th>Undershot Minutes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employee-table-body">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- JSON Data Input Section -->
+        <div class="card full-width">
+            <div class="card-header">
+                <h2>Load Meeting Data (JSON)</h2>
+            </div>
+            <div class="card-body">
+                <div class="json-input-container">
+                    <div class="form-group">
+                        <label for="json-input">Paste JSON data or upload a JSON file:</label>
+                        <textarea id="json-input" rows="16">[
+  {
+    "employeeId": "EMP001",
+    "date": "2024-01-15",
+    "duration": 30,
+    "hasActionItems": true,
+    "timeDifference": 5,
+    "efficiency": 85
+  },
+  {
+    "employeeId": "EMP001",
+    "date": "2024-01-16",
+    "duration": 45,
+    "hasActionItems": false,
+    "timeDifference": -10,
+    "efficiency": 70
+  },
+  {
+    "employeeId": "EMP002",
+    "date": "2024-01-15",
+    "duration": 60,
+    "hasActionItems": true,
+    "timeDifference": 15,
+    "efficiency": 90
+  },
+  {
+    "employeeId": "EMP002",
+    "date": "2024-01-17",
+    "duration": 30,
+    "hasActionItems": true,
+    "timeDifference": -5,
+    "efficiency": 95
+  },
+  {
+    "employeeId": "EMP003",
+    "date": "2024-01-16",
+    "duration": 90,
+    "hasActionItems": false,
+    "timeDifference": 0,
+    "efficiency": 60
+  },
+  {
+    "employeeId": "EMP003",
+    "date": "2024-01-18",
+    "duration": 20,
+    "hasActionItems": true,
+    "timeDifference": -8,
+    "efficiency": 80
+  }
+]</textarea>
+                    </div>
+                    <div class="button-group">
+                        <button type="button" class="btn-primary" id="load-json-btn">Load JSON Data</button>
+                        <label for="json-file-input" class="btn-secondary">
+                            Upload JSON File
+                            <input type="file" id="json-file-input" accept=".json" style="display: none;">
+                        </label>
+                        <button type="button" class="btn-secondary" id="clear-data-btn">Clear Data</button>
+                    </div>
+                    <div id="json-error" class="error-message" style="display: none;"></div>
+                    <div id="json-success" class="success-message" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,57 @@
+{
+    "action_items": [
+        {
+            "task": "Share resort details near Bangalore suitable for headcount and budget",
+            "owner": "Pooja",
+            "deadline": "Tomorrow"
+        },
+        {
+            "task": "Get final headcount from HR",
+            "owner": "Rohit",
+            "deadline": "Next Monday"
+        },
+        {
+            "task": "Check with AV team about equipment requirements",
+            "owner": "Mehul",
+            "deadline": "Today"
+        },
+        {
+            "task": "Create list of activity ideas for the party",
+            "owner": "Pooja",
+            "deadline": "Not specified"
+        }
+    ],
+    "open_points": [
+        {
+            "topic": "Final venue selection",
+            "context": "Resort details pending review before confirmation",
+            "blocking": true
+        },
+        {
+            "topic": "Entertainment lineup and games plan",
+            "context": "Activity ideas and equipment requirements yet to be finalized",
+            "blocking": false
+        },
+        {
+            "topic": "Budget confirmation",
+            "context": "Overall expenses need validation against 15 lakh limit after venue and activities are decided",
+            "blocking": true
+        }
+    ],
+    "follow_up_assessment": {
+        "follow_up_needed": true,
+        "reason": "Several key decisions like venue, entertainment plan, and budget validation remain open and require review once action items are completed.",
+        "suggested_topics": [
+            "Venue finalization",
+            "Budget confirmation",
+            "Entertainment and activity lineup"
+        ]
+    },
+    "fruitfulness": {
+        "score": 75,
+        "verdict": "Partially Productive",
+        "explanation": "The meeting made good progress with clear action items and tentative decisions on theme and date, but major aspects like venue and budget remain unresolved."
+    },
+    "model_used": "gpt-5",
+    "timeDifference": 20
+}

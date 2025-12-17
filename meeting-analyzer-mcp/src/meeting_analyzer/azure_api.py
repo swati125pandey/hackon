@@ -8,6 +8,7 @@ Requires AZURE_OPENAI_API_KEY environment variable to be set (or in .env file).
 import os
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -299,7 +300,7 @@ async def analyze_transcript(request: TranscriptRequest):
             time_difference = request.meeting_booked_duration - request.meeting_duration_minutes
         
         # Build response model
-        return MeetingAnalysis(
+        analysis_result = MeetingAnalysis(
             action_items=[
                 ActionItem(**item) for item in analysis_data.get("action_items", [])
             ],
@@ -323,6 +324,16 @@ async def analyze_transcript(request: TranscriptRequest):
             model_used=request.model,
             timeDifference=time_difference
         )
+        
+        # Save response to file
+        responses_dir = Path(__file__).parent.parent.parent / "responses"
+        responses_dir.mkdir(exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        response_file = responses_dir / f"analysis_response_{timestamp}.txt"
+        with open(response_file, "w") as f:
+            f.write(json.dumps(analysis_result.model_dump(), indent=4))
+        
+        return analysis_result
         
     except Exception as e:
         if isinstance(e, HTTPException):
