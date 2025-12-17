@@ -47,6 +47,7 @@ AZURE_CONFIGS = {
 class TranscriptRequest(BaseModel):
     transcript: str
     meeting_duration_minutes: Optional[int] = None
+    meeting_booked_duration: Optional[int] = None
     expected_attendees: Optional[int] = None
     model: Literal["gpt-4.1", "gpt-5"] = "gpt-4.1"
 
@@ -81,6 +82,7 @@ class MeetingAnalysis(BaseModel):
     follow_up_assessment: FollowUpAssessment
     fruitfulness: MeetingFruitfulness
     model_used: str
+    timeDifference: Optional[int] = None  # Difference between booked and actual duration (in minutes)
 
 
 class AnalysisPrompt(BaseModel):
@@ -241,8 +243,10 @@ async def analyze_transcript(request: TranscriptRequest):
     
     # Add context if provided
     context_parts = []
+    if request.meeting_booked_duration:
+        context_parts.append(f"Meeting booked duration: {request.meeting_booked_duration} minutes")
     if request.meeting_duration_minutes:
-        context_parts.append(f"Meeting duration: {request.meeting_duration_minutes} minutes")
+        context_parts.append(f"Actual meeting duration: {request.meeting_duration_minutes} minutes")
     if request.expected_attendees:
         context_parts.append(f"Expected attendees: {request.expected_attendees}")
     
@@ -289,6 +293,11 @@ async def analyze_transcript(request: TranscriptRequest):
                     detail=f"Failed to parse LLM response as JSON. Response: {response_text[:500]}"
                 )
         
+        # Calculate time difference if both booked and actual duration are provided
+        time_difference = None
+        if request.meeting_booked_duration is not None and request.meeting_duration_minutes is not None:
+            time_difference = request.meeting_booked_duration - request.meeting_duration_minutes
+        
         # Build response model
         return MeetingAnalysis(
             action_items=[
@@ -311,7 +320,8 @@ async def analyze_transcript(request: TranscriptRequest):
                     "explanation": "Analysis failed"
                 })
             ),
-            model_used=request.model
+            model_used=request.model,
+            timeDifference=time_difference
         )
         
     except Exception as e:
@@ -335,8 +345,10 @@ async def get_analysis_prompt(request: TranscriptRequest):
     
     # Add context if provided
     context_parts = []
+    if request.meeting_booked_duration:
+        context_parts.append(f"Meeting booked duration: {request.meeting_booked_duration} minutes")
     if request.meeting_duration_minutes:
-        context_parts.append(f"Meeting duration: {request.meeting_duration_minutes} minutes")
+        context_parts.append(f"Actual meeting duration: {request.meeting_duration_minutes} minutes")
     if request.expected_attendees:
         context_parts.append(f"Expected attendees: {request.expected_attendees}")
     

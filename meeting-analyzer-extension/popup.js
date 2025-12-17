@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultsTab = document.getElementById('results-tab');
   const transcriptInput = document.getElementById('transcript');
   const durationInput = document.getElementById('duration');
+  const bookedDurationInput = document.getElementById('booked-duration');
   const attendeesInput = document.getElementById('attendees');
   const modelSelect = document.getElementById('model');
   const endpointInput = document.getElementById('endpoint');
@@ -59,8 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Analyze button click
-  analyzeBtn.addEventListener('click', async () => {
+  // Core analyze function - can be called programmatically or via button
+  async function analyzeTranscript() {
     let payload;
 
     if (currentInputMode === 'json') {
@@ -95,7 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
         transcript: transcript,
         model: modelSelect.value,
         meeting_duration_minutes: parseInt(durationInput.value) || 30,
-        expected_attendees: parseInt(attendeesInput.value) || 4
+        expected_attendees: parseInt(attendeesInput.value) || 4,
+        meeting_booked_duration: parseInt(bookedDurationInput.value) || 50
       };
     }
 
@@ -151,7 +153,10 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       setLoading(false);
     }
-  });
+  }
+
+  // Analyze button click
+  analyzeBtn.addEventListener('click', analyzeTranscript);
 
   function setLoading(loading) {
     analyzeBtn.disabled = loading;
@@ -376,7 +381,8 @@ document.addEventListener('DOMContentLoaded', () => {
             transcript: transcriptText,
             model: modelSelect.value || 'gpt-4.1',
             meeting_duration_minutes: duration,
-            expected_attendees: attendees
+            expected_attendees: attendees,
+            meeting_booked_duration: parseInt(bookedDurationInput.value) || 50
           };
           jsonBodyInput.value = JSON.stringify(jsonPayload, null, 2);
           
@@ -384,9 +390,15 @@ document.addEventListener('DOMContentLoaded', () => {
           chrome.storage.local.set({ autoAnalyze: false });
           
           // Show success notification
-          showSuccess(`📹 Loaded ${data.lastMeetingTranscript.length} captions from Google Meet! Ready in both Transcript and JSON modes.`);
+          showSuccess(`📹 Loaded ${data.lastMeetingTranscript.length} captions from Google Meet! Auto-analyzing...`);
           
           console.log('[Meeting Analyzer] Auto-loaded transcript from Google Meet:', data.lastMeetingTranscript.length, 'entries');
+          
+          // Automatically trigger analysis after a short delay to let UI update
+          setTimeout(() => {
+            console.log('[Meeting Analyzer] Auto-triggering analysis...');
+            analyzeTranscript();
+          }, 500);
         }
       }
     });
