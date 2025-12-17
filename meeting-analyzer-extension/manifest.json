@@ -3,9 +3,24 @@
   "name": "Meeting Analyzer",
   "version": "1.0.0",
   "description": "Analyze meeting transcripts to extract insights, action items, and summaries",
-  "permissions": [],
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
   "host_permissions": [
-    "http://localhost:8001/*"
+    "http://localhost:8001/*",
+    "https://meet.google.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://meet.google.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
   ],
   "action": {
     "default_popup": "popup.html",
@@ -21,4 +36,3 @@
     "128": "icons/icon128.png"
   }
 }
-

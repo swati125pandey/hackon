@@ -23,6 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentInputMode = 'transcript';
 
+  // Check for auto-loaded transcript from Google Meet
+  loadTranscriptFromGoogleMeet();
+
   // Tab switching
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -113,7 +116,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+        let errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+        if (errorData.detail) {
+          errorMsg = typeof errorData.detail === 'string' 
+            ? errorData.detail 
+            : JSON.stringify(errorData.detail);
+        } else if (errorData.error) {
+          errorMsg = typeof errorData.error === 'string'
+            ? errorData.error
+            : JSON.stringify(errorData.error);
+        } else if (errorData.message) {
+          errorMsg = typeof errorData.message === 'string'
+            ? errorData.message
+            : JSON.stringify(errorData.message);
+        }
+        throw new Error(errorMsg);
       }
 
       const data = await response.json();
@@ -127,7 +144,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (error) {
       console.error('Analysis error:', error);
-      showError(error.message || 'Failed to analyze transcript. Make sure the API server is running.');
+      const errorMsg = error.message 
+        ? (typeof error.message === 'string' ? error.message : JSON.stringify(error.message))
+        : 'Failed to analyze transcript. Make sure the API server is running.';
+      showError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -310,6 +330,120 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     return JSON.stringify(item);
+  }
+
+  // Load transcript from Google Meet storage
+  function loadTranscriptFromGoogleMeet() {
+    // Check if chrome.storage is available (extension context)
+    if (typeof chrome === 'undefined' || !chrome.storage) {
+      console.log('Chrome storage not available');
+      return;
+    }
+
+    chrome.storage.local.get([
+      'lastMeetingTranscript', 
+      'lastMeetingDuration', 
+      'lastParticipantCount',
+      'lastMeetingTime',
+      'autoAnalyze'
+    ], (data) => {
+      if (chrome.runtime.lastError) {
+        console.error('Storage error:', chrome.runtime.lastError);
+        return;
+      }
+
+      // Check if we have a recent transcript to auto-load
+      if (data.autoAnalyze && data.lastMeetingTranscript && data.lastMeetingTranscript.length > 0) {
+        // Check if the transcript is recent (within last hour)
+        const isRecent = data.lastMeetingTime && (Date.now() - data.lastMeetingTime) < 3600000;
+        
+        if (isRecent) {
+          // Format transcript entries into text
+          const transcriptText = data.lastMeetingTranscript.map(entry => 
+            `**${entry.speaker}:** ${entry.text}`
+          ).join('\n\n');
+          
+          const duration = data.lastMeetingDuration || 30;
+          const attendees = data.lastParticipantCount || 4;
+          
+          // Fill in the transcript mode form
+          transcriptInput.value = transcriptText;
+          durationInput.value = duration;
+          attendeesInput.value = attendees;
+          
+          // Also populate the JSON body for JSON mode
+          const jsonPayload = {
+            transcript: transcriptText,
+            model: modelSelect.value || 'gpt-4.1',
+            meeting_duration_minutes: duration,
+            expected_attendees: attendees
+          };
+          jsonBodyInput.value = JSON.stringify(jsonPayload, null, 2);
+          
+          // Clear the auto-analyze flag so it doesn't load again
+          chrome.storage.local.set({ autoAnalyze: false });
+          
+          // Show success notification
+          showSuccess(`📹 Loaded ${data.lastMeetingTranscript.length} captions from Google Meet! Ready in both Transcript and JSON modes.`);
+          
+          console.log('[Meeting Analyzer] Auto-loaded transcript from Google Meet:', data.lastMeetingTranscript.length, 'entries');
+        }
+      }
+    });
+  }
+
+  // Show success message
+  function showSuccess(message) {
+    // Remove any existing success message
+    const existing = document.querySelector('.success-message');
+    if (existing) existing.remove();
+    
+    const successEl = document.createElement('div');
+    successEl.className = 'success-message';
+    successEl.innerHTML = `
+      <div style="display: flex; align-items: flex-start; gap: 10px;">
+        <span style="font-size: 18px;">✅</span>
+        <div>
+          <div style="font-weight: 600; margin-bottom: 4px;">Transcript Loaded!</div>
+          <div style="font-size: 12px; opacity: 0.9;">${message}</div>
+        </div>
+      </div>
+    `;
+    successEl.style.cssText = `
+      margin-bottom: 16px;
+      padding: 14px 16px;
+      background: rgba(74, 222, 128, 0.15);
+      border: 1px solid #4ade80;
+      border-radius: 10px;
+      color: #4ade80;
+      font-size: 13px;
+      animation: slideIn 0.3s ease;
+    `;
+    
+    // Add animation keyframes
+    if (!document.getElementById('success-animation')) {
+      const style = document.createElement('style');
+      style.id = 'success-animation';
+      style.textContent = `
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    // Insert at the top of the input tab
+    const firstChild = inputTab.querySelector('.input-mode-toggle') || inputTab.firstChild;
+    inputTab.insertBefore(successEl, firstChild);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+      successEl.style.opacity = '0';
+      successEl.style.transform = 'translateY(-10px)';
+      successEl.style.transition = 'all 0.3s ease';
+      setTimeout(() => successEl.remove(), 300);
+    }, 10000);
   }
 
   // Load sample transcript for demo
